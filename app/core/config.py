@@ -1,13 +1,16 @@
 """Configuración central de la aplicación OCR."""
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import Any
 
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Valores de configuración obtenidos desde variables de entorno o valores por defecto."""
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
     app_name: str = "OCR API"
     api_version: str = "1.0.0"
@@ -18,7 +21,7 @@ class Settings(BaseSettings):
         ge=500,
         description="Dimensión máxima (ancho o alto) antes de reescalar la imagen.",
     )
-    allowed_image_dirs: List[str] = Field(
+    allowed_image_dirs: list[str] = Field(
         default_factory=list,
         description="Directorios permitidos para la lectura de imágenes.",
     )
@@ -38,16 +41,17 @@ class Settings(BaseSettings):
     ocr_enable_mkldnn: bool = Field(True, description="Habilita MKLDNN para acelerar inferencia en CPU.")
     ocr_angle_classifier: bool = Field(True, description="Activa el clasificador de ángulo en PaddleOCR.")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-
-    @validator("allowed_image_dirs", pre=True)
-    def split_allowed_dirs(cls, value):  # type: ignore[override]
+    @field_validator("allowed_image_dirs", mode="before")
+    @classmethod
+    def split_allowed_dirs(cls, value: Any) -> list[str]:
         """Permite especificar múltiples directorios mediante una cadena separada por punto y coma."""
+        if value is None or value == "":
+            return []
         if isinstance(value, str):
             return [item for item in value.split(";") if item.strip()]
-        return value
+        if isinstance(value, (list, tuple, set)):
+            return [item for item in value if isinstance(item, str) and item.strip()]
+        raise TypeError("allowed_image_dirs debe ser una cadena o una colección de cadenas")
 
     @property
     def max_image_size_bytes(self) -> int:
@@ -60,7 +64,7 @@ class Settings(BaseSettings):
         return Path(self.log_dir).expanduser() / self.log_filename
 
     @property
-    def allowed_image_paths(self) -> List[Path]:
+    def allowed_image_paths(self) -> list[Path]:
         """Lista de rutas base permitidas para las imágenes."""
         return [Path(path).expanduser().resolve() for path in self.allowed_image_dirs]
 
