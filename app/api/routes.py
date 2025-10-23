@@ -64,6 +64,18 @@ async def perform_ocr(payload: OCRRequest, request: Request) -> dict:
         try:
             processed_image = await run_in_threadpool(preprocess_image, image_path, settings, preprocess_logger)
             text = await run_in_threadpool(request.app.state.ocr_engine.recognize_text, processed_image)
+        except ModuleNotFoundError as e:
+            if getattr(e, "name", "") == "paddle":
+                logger.error(
+                    "Dependencia faltante 'paddle'. Instala paddlepaddle (CPU) o paddlepaddle-gpu (GPU) y usa una versión de Python soportada."
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Dependencia de OCR no instalada: paddle. Instala 'paddlepaddle' (CPU) o 'paddlepaddle-gpu' (GPU) y verifica la compatibilidad de versión de Python."
+                    ),
+                ) from e
+            raise
         except HTTPException:
             raise
         except Exception as error:  # noqa: BLE001 - se registra y transforma en HTTP 500 controlado

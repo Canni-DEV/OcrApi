@@ -36,6 +36,34 @@ class Settings(BaseSettings):
     denoise_h: float = Field(10.0, ge=0.0, description="Parámetro h para fastNlMeansDenoising.")
     denoise_template_window_size: int = Field(7, ge=1, description="Tamaño de ventana de plantilla para denoising.")
     denoise_search_window_size: int = Field(21, ge=1, description="Tamaño de ventana de búsqueda para denoising.")
+    # Nueva configuración de preprocesado
+    preprocess_autoconfig: bool = Field(
+        True,
+        description=(
+            "Activa auto-configuración por imagen (contraste, nitidez, recorte superior dinámico)."
+        ),
+    )
+    preprocess_enable_denoise: bool = Field(
+        False, description="Fuerza denoise (si autoconfig está desactivado)."
+    )
+    preprocess_enable_binarize: bool = Field(
+        False, description="Fuerza binarización (si autoconfig está desactivado)."
+    )
+    preprocess_max_deskew_degrees: float = Field(
+        15.0, ge=0.0, le=45.0, description="Umbral máximo de corrección de inclinación en grados."
+    )
+    ocr_crop_height_percent: int = Field(
+        100,
+        ge=50,
+        le=100,
+        description=(
+            "Porcentaje de altura a procesar (desde arriba hacia abajo). "
+            "100% procesa toda la imagen. Mínimo permitido 50%."
+        ),
+    )
+    preprocess_enable_denoise: bool = Field(False, description="Aplica denoise (desactivar en documentos claros).")
+    preprocess_enable_binarize: bool = Field(False, description="Aplica binarización adaptativa (desactivado por defecto).")
+    preprocess_max_deskew_degrees: float = Field(15.0, ge=0.0, le=45.0, description="Umbral máximo de corrección de inclinación en grados.")
     ocr_language: str = Field("es", description="Código de idioma para el motor OCR.")
     ocr_use_gpu: bool = Field(False, description="Indica si se debe utilizar GPU para PaddleOCR.")
     ocr_enable_mkldnn: bool = Field(True, description="Habilita MKLDNN para acelerar inferencia en CPU.")
